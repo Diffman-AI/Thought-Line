@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+<title>Thought Line</title>
+
+<!-- Add-to-Home-Screen / standalone behavior -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Thought Line" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#FBFAF6" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#FBFAF6;
+    --surface:#FFFFFF;
+    --sunk:#F1EFE8;
+    --ink:#1E2A26;
+    --muted:#5E6B64;
+    --faint:#8A9389;
+    --hair:#E4E1D8;
+    --accent:#1C6B57;
+    --accent-press:#155345;
+    --distill-ink:#8A5A12;
+    --distill-bg:#FBF3E2;
+    --distill-hair:#EAD9B4;
+    --danger:#A23B2D;
+    --radius:14px;
+    --display:"Fraunces",Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --shadow:0 1px 2px rgba(30,42,38,.05), 0 6px 18px rgba(30,42,38,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#14181A;
+      --surface:#1C2123;
+      --sunk:#22282A;
+      --ink:#ECEFEA;
+      --muted:#A6B0A9;
+      --faint:#7C857E;
+      --hair:#2C3335;
+      --accent:#46B596;
+      --accent-press:#3A9C81;
+      --distill-ink:#E6C679;
+      --distill-bg:#2A2415;
+      --distill-hair:#473C1F;
+      --danger:#E08573;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25);
+    }
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:var(--sans);
+    background:var(--paper);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    overscroll-behavior-y:none;
+  }
+  button{font-family:inherit;cursor:pointer;}
+  textarea,input,select{font-family:inherit;font-size:16px;color:var(--ink);}
+
+  .app{
+    max-width:640px;margin:0 auto;min-height:100%;
+    display:flex;flex-direction:column;
+    padding-top:env(safe-area-inset-top);
+  }
+
+  /* ---- Top bar ---- */
+  .topbar{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding:18px 20px 10px;
+  }
+  .wordmark{
+    font-family:var(--display);font-weight:600;font-size:24px;
+    letter-spacing:-.01em;
+  }
+  .wordmark .dot{color:var(--accent);}
+  .topdate{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.02em;text-transform:uppercase;}
+
+  /* ---- View scaffolding ---- */
+  .view{display:none;flex:1;padding:4px 20px 130px;}
+  .view.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){.view.active{animation:none;}}
+
+  .view-title{
+    font-family:var(--display);font-weight:500;font-size:30px;
+    letter-spacing:-.015em;margin:8px 0 2px;
+  }
+  .view-sub{color:var(--muted);font-size:14px;margin:0 0 18px;}
+
+  /* ---- Thread / entries ---- */
+  .thread{position:relative;margin-left:6px;padding-left:20px;}
+  .thread::before{
+    content:"";position:absolute;left:3px;top:6px;bottom:6px;width:2px;
+    background:var(--hair);border-radius:2px;
+  }
+  .entry{position:relative;padding:0 0 18px;animation:rise .25s ease;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){.entry{animation:none;}}
+  .entry::before{
+    content:"";position:absolute;left:-21px;top:6px;width:8px;height:8px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 0 3px var(--paper);
+  }
+  .entry .ts{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.04em;}
+  .entry .body{font-size:16px;margin-top:2px;white-space:pre-wrap;word-wrap:break-word;}
+  .entry .del{
+    border:none;background:none;color:var(--faint);font-size:12px;padding:2px 0;margin-top:3px;
+  }
+  .entry .del:hover{color:var(--danger);}
+
+  /* ---- Distilled card ---- */
+  .distilled{
+    background:var(--distill-bg);border:1px solid var(--distill-hair);
+    border-radius:var(--radius);padding:16px 18px;margin:0 0 22px;
+    box-shadow:var(--shadow);animation:rise .3s ease;
+  }
+  .distilled .label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--distill-ink);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .distilled .content{font-size:15px;white-space:pre-wrap;word-wrap:break-word;}
+  .distilled .content h1,.distilled .content h2,.distilled .content h3{
+    font-family:var(--display);font-weight:600;font-size:16px;margin:14px 0 4px;
+  }
+  .distilled .content ul{margin:4px 0;padding-left:18px;}
+  .distilled .content li{margin:2px 0;}
+  .distilled .content strong{font-weight:600;}
+
+  /* ---- Cards (week days) ---- */
+  .daycard{
+    background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);
+    padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);
+  }
+  .daycard .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .daycard .day{font-family:var(--display);font-weight:500;font-size:17px;}
+  .daycard .count{font-family:var(--mono);font-size:11px;color:var(--faint);}
+  .daycard .summary{font-size:14px;color:var(--ink);white-space:pre-wrap;word-wrap:break-word;}
+  .daycard .empty{font-size:13px;color:var(--faint);font-style:italic;}
+
+  /* ---- Buttons ---- */
+  .btn{
+    border:none;border-radius:11px;padding:13px 16px;font-size:15px;font-weight:600;
+    background:var(--accent);color:#fff;width:100%;transition:background .15s,transform .05s;
+  }
+  .btn:active{background:var(--accent-press);transform:scale(.99);}
+  .btn:disabled{opacity:.45;}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);}
+  .btn.subtle{background:var(--sunk);color:var(--ink);}
+  .btn.sm{width:auto;padding:8px 14px;font-size:13px;font-weight:600;}
+  .btnrow{display:flex;gap:10px;margin-top:14px;}
+  .btnrow .btn{flex:1;}
+
+  /* ---- Capture dock ---- */
+  .dock{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    background:linear-gradient(to top, var(--paper) 72%, transparent);
+    padding:14px 20px calc(10px + env(safe-area-inset-bottom));
+  }
+  .dock-inner{max-width:640px;margin:0 auto;}
+  .capture{
+    background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:10px 12px;display:flex;align-items:flex-end;gap:8px;
+  }
+  .capture textarea{
+    flex:1;border:none;background:none;resize:none;outline:none;font-size:16px;
+    max-height:120px;line-height:1.45;padding:6px 2px;
+  }
+  .iconbtn{
+    flex:none;width:42px;height:42px;border-radius:11px;border:none;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .mic{background:var(--sunk);color:var(--muted);}
+  .mic.live{background:var(--danger);color:#fff;animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(162,59,45,.4);}50%{box-shadow:0 0 0 7px rgba(162,59,45,0);}}
+  .send{background:var(--accent);color:#fff;}
+  .send:disabled{opacity:.4;}
+  .iconbtn svg{width:20px;height:20px;}
+  .dock-hint{font-size:11px;color:var(--faint);text-align:center;margin-top:6px;}
+
+  /* ---- Tab bar ---- */
+  .tabs{
+    position:fixed;left:0;right:0;bottom:0;z-index:10;display:none;
+  }
+  /* tabs are integrated into dock area on capture, but we use a separate persistent bar */
+  .tabbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    display:flex;background:var(--surface);border-top:1px solid var(--hair);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .tabbar.hidden{display:none;}
+  .tab{
+    flex:1;border:none;background:none;padding:9px 0 7px;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    color:var(--faint);font-size:10px;font-weight:600;letter-spacing:.02em;
+  }
+  .tab svg{width:22px;height:22px;}
+  .tab.active{color:var(--accent);}
+
+  /* ---- Settings ---- */
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  .field input,.field select,.field textarea{
+    width:100%;border:1px solid var(--hair);border-radius:10px;padding:11px 12px;
+    background:var(--surface);outline:none;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+  .field .hint{font-size:12px;color:var(--faint);margin-top:5px;}
+  .section-h{font-family:var(--display);font-weight:600;font-size:15px;margin:26px 0 12px;
+    padding-top:18px;border-top:1px solid var(--hair);}
+  .privacy{font-size:12px;color:var(--faint);line-height:1.5;background:var(--sunk);
+    padding:12px 14px;border-radius:10px;margin-top:8px;}
+
+  /* ---- Misc ---- */
+  .empty-state{text-align:center;color:var(--faint);padding:40px 10px;font-size:15px;}
+  .empty-state .big{font-family:var(--display);font-size:20px;color:var(--muted);margin-bottom:6px;}
+  .toast{
+    position:fixed;left:50%;bottom:90px;transform:translateX(-50%);
+    background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;
+    font-size:14px;z-index:100;opacity:0;pointer-events:none;transition:opacity .2s;
+    max-width:88%;text-align:center;
+  }
+  .toast.show{opacity:1;}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;
+    border-radius:50%;animation:rot .7s linear infinite;vertical-align:-2px;margin-right:6px;}
+  @keyframes rot{to{transform:rotate(360deg);}}
+  .weekly-edit{width:100%;min-height:220px;border:1px solid var(--hair);border-radius:var(--radius);
+    padding:14px;background:var(--surface);outline:none;resize:vertical;font-size:15px;line-height:1.5;}
+  .weekly-edit:focus{border-color:var(--accent);}
+  .pasthead{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--faint);margin:24px 0 10px;}
+  .arc-item{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);
+    margin-bottom:10px;box-shadow:var(--shadow);overflow:hidden;}
+  .arc-head{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;cursor:pointer;gap:10px;}
+  .arc-head .t{font-family:var(--display);font-weight:500;font-size:16px;}
+  .arc-head .chev{color:var(--faint);transition:transform .2s;flex:none;}
+  .arc-item.open .arc-head .chev{transform:rotate(90deg);}
+  .arc-body{display:none;padding:0 16px 14px;font-size:14px;}
+  .arc-item.open .arc-body{display:block;}
+  .arc-body .content{white-space:pre-wrap;word-wrap:break-word;}
+  .arc-body .content h3{font-family:var(--display);font-weight:600;font-size:15px;margin:12px 0 4px;}
+  .arc-body .content ul{margin:4px 0;padding-left:18px;}
+  .arc-body .content li{margin:2px 0;}
+  .arc-body .copybtn{margin-top:12px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="wordmark">Thought <span class="dot">Line</span></div>
+    <div class="topdate" id="topdate"></div>
+  </header>
+
+  <!-- TODAY -->
+  <section class="view active" id="view-today">
+    <h1 class="view-title">Today</h1>
+    <p class="view-sub" id="today-sub">Dictate a thought as it comes. Distill it when the day is done.</p>
+    <div id="today-distilled"></div>
+    <div id="today-thread"></div>
+    <button class="btn ghost" id="distill-btn" style="margin-top:8px;">Distill today</button>
+  </section>
+
+  <!-- WEEK -->
+  <section class="view" id="view-week">
+    <h1 class="view-title">This week</h1>
+    <p class="view-sub">Roll your recent days into one note for your boss.</p>
+    <div class="field" style="margin-bottom:14px;">
+      <label for="week-window">Summarize</label>
+      <select id="week-window">
+        <option value="since-last">Since last weekly summary</option>
+        <option value="since-saturday">Since last Saturday</option>
+        <option value="last-5">Last 5 days</option>
+        <option value="last-7">Last 7 days</option>
+      </select>
+    </div>
+    <div id="week-days"></div>
+    <button class="btn" id="weekly-btn" style="margin-top:6px;">Generate weekly summary</button>
+    <div id="weekly-out"></div>
+    <div id="weekly-history"></div>
+  </section>
+
+  <!-- ARCHIVE -->
+  <section class="view" id="view-archive">
+    <h1 class="view-title">Archive</h1>
+    <p class="view-sub">Every summary you've made, newest first. Tap one to expand.</p>
+    <div id="archive-list"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <h1 class="view-title">Settings</h1>
+    <p class="view-sub">Everything here stays on this device.</p>
+
+    <div class="section-h" style="border-top:none;padding-top:0;margin-top:6px;">AI</div>
+    <div class="field">
+      <label for="set-key">Anthropic API key</label>
+      <input type="password" id="set-key" placeholder="sk-ant-..." autocomplete="off" />
+      <div class="hint">Used to write your summaries. Get one at console.anthropic.com. Stored only on this phone.</div>
+    </div>
+    <div class="field">
+      <label for="set-model">Model</label>
+      <select id="set-model">
+        <option value="claude-haiku-4-5-20251001">Haiku — fastest & cheapest</option>
+        <option value="claude-sonnet-4-6">Sonnet — balanced (recommended)</option>
+        <option value="claude-opus-4-8">Opus — most thorough</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="set-style">How summaries should sound (optional)</label>
+      <textarea id="set-style" rows="3" placeholder="e.g. Crisp and factual. Separate decisions from open questions. No filler."></textarea>
+      <div class="hint">Steers both daily and weekly summaries.</div>
+    </div>
+
+    <div class="section-h">You & your boss</div>
+    <div class="field">
+      <label for="set-you">Your name</label>
+      <input type="text" id="set-you" placeholder="Gary" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label for="set-bossname">Boss's name</label>
+      <input type="text" id="set-bossname" placeholder="e.g. Dr. Smith" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label for="set-bossemail">Boss's email</label>
+      <input type="email" id="set-bossemail" placeholder="boss@example.com" autocomplete="off" inputmode="email" />
+    </div>
+    <button class="btn" id="save-settings">Save settings</button>
+
+    <div class="section-h">Your data</div>
+    <div class="btnrow" style="margin-top:0;">
+      <button class="btn subtle" id="export-btn">Export all</button>
+      <button class="btn subtle" id="clear-btn" style="color:var(--danger);">Erase all</button>
+    </div>
+    <div class="privacy">
+      Your thoughts, summaries, and API key live only in this browser on this device — nothing is sent anywhere except directly to Anthropic when you ask for a summary. Clearing Safari website data will erase them, so export now and then if they matter.
+    </div>
+  </section>
+
+  <!-- CAPTURE DOCK (only on Today) -->
+  <div class="dock" id="dock">
+    <div class="dock-inner">
+      <div class="capture">
+        <textarea id="capture-input" rows="1" placeholder="Dictate or type a thought…"></textarea>
+        <button class="iconbtn mic" id="mic-btn" title="Dictate" aria-label="Dictate">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        </button>
+        <button class="iconbtn send" id="send-btn" title="Add" aria-label="Add" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        </button>
+      </div>
+      <div class="dock-hint" id="dock-hint">Tap the mic on your keyboard to dictate hands-free.</div>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab active" data-view="today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      <span>Today</span>
+    </button>
+    <button class="tab" data-view="week">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+      <span>Week</span>
+    </button>
+    <button class="tab" data-view="archive">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+      <span>Archive</span>
+    </button>
+    <button class="tab" data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ---------------- State ---------------- */
+const KEY = "throughline.v1";
+const DEFAULT = { thoughts: [], daily: {}, weekly: [], settings: {
+  apiKey:"", model:"claude-sonnet-4-6", style:"", you:"", bossName:"", bossEmail:"", weekWindow:"since-last"
+}};
+let state = load();
+if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return structuredClone(DEFAULT);
+    const p = JSON.parse(raw);
+    return Object.assign(structuredClone(DEFAULT), p, {settings:Object.assign({},DEFAULT.settings,p.settings||{})});
+  }catch(e){ return structuredClone(DEFAULT); }
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){/* storage may be unavailable; keep in-memory */} }
+
+/* ---------------- Helpers ---------------- */
+const $ = id => document.getElementById(id);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+function dayKey(d=new Date()){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function fmtTime(ts){ return new Date(ts).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}); }
+function fmtDay(key){ const [y,m,d]=key.split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString([], {weekday:"long",month:"short",day:"numeric"}); }
+function fmtShort(key){ const [y,m,d]=key.split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString([], {month:"short",day:"numeric"}); }
+function lastNDays(n){ const out=[]; const t=new Date(); for(let i=0;i<n;i++){ const d=new Date(t); d.setDate(t.getDate()-i); out.push(dayKey(d)); } return out; }
+function thoughtsFor(key){ return state.thoughts.filter(t=>dayKey(new Date(t.ts))===key).sort((a,b)=>a.ts-b.ts); }
+
+function sinceLastSaturday(){
+  const t=new Date(); t.setHours(0,0,0,0);
+  let d=new Date(t);
+  do { d.setDate(d.getDate()-1); } while(d.getDay()!==6); // 6 = Saturday
+  const days=[]; let cur=new Date(d);
+  while(cur<=t){ days.push(dayKey(cur)); cur.setDate(cur.getDate()+1); }
+  return days; // most recent Saturday → today (oldest → newest)
+}
+function weekWindowDays(){
+  const mode = state.settings.weekWindow || "since-last";
+  if(mode==="last-7") return lastNDays(7).reverse();
+  if(mode==="last-5") return lastNDays(5).reverse();
+  if(mode==="since-saturday") return sinceLastSaturday();
+  // since-last: days after the last weekly summary's end date, through today
+  if(state.weekly.length){
+    const [y,m,d]=state.weekly[0].end.split("-").map(Number);
+    const start=new Date(y,m-1,d); start.setDate(start.getDate()+1); start.setHours(0,0,0,0);
+    const t=new Date(); t.setHours(0,0,0,0);
+    const days=[]; let cur=new Date(start);
+    while(cur<=t){ days.push(dayKey(cur)); cur.setDate(cur.getDate()+1); }
+    return days; // empty if nothing new since last summary
+  }
+  return lastNDays(7).reverse(); // first-ever run: fall back to last 7
+}
+
+let toastTimer;
+function toast(msg){ const el=$("toast"); el.textContent=msg; el.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("show"),2600); }
+
+/* lightweight markdown -> html for summary display */
+function mdToHtml(md){
+  const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const lines = esc(md).split("\n");
+  let html="", inList=false;
+  const inline = s => s.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+  for(let ln of lines){
+    if(/^\s*[-*•]\s+/.test(ln)){ if(!inList){html+="<ul>";inList=true;} html+="<li>"+inline(ln.replace(/^\s*[-*•]\s+/,""))+"</li>"; continue; }
+    if(inList){html+="</ul>";inList=false;}
+    if(/^#{1,6}\s+/.test(ln)){ html+="<h3>"+inline(ln.replace(/^#{1,6}\s+/,""))+"</h3>"; continue; }
+    if(ln.trim()==="") html+="<br/>"; else html+="<p style='margin:4px 0'>"+inline(ln)+"</p>";
+  }
+  if(inList) html+="</ul>";
+  return html;
+}
+
+/* ---------------- Claude API ---------------- */
+async function callClaude(system, user){
+  const key = state.settings.apiKey.trim();
+  if(!key) throw new Error("NO_KEY");
+  const res = await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{
+      "content-type":"application/json",
+      "x-api-key":key,
+      "anthropic-version":"2023-06-01",
+      "anthropic-dangerous-direct-browser-access":"true"
+    },
+    body:JSON.stringify({
+      model: state.settings.model || "claude-sonnet-4-6",
+      max_tokens: 1500,
+      system,
+      messages:[{role:"user",content:user}]
+    })
+  });
+  if(!res.ok){
+    let detail=""; try{ const j=await res.json(); detail=j.error?.message||""; }catch(e){}
+    throw new Error("API_"+res.status+(detail?": "+detail:""));
+  }
+  const data = await res.json();
+  return (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+}
+function styleNote(){ return state.settings.style ? ("\n\nStyle guidance from the user: "+state.settings.style) : ""; }
+
+async function distillDay(key){
+  const ts = thoughtsFor(key);
+  if(!ts.length) throw new Error("EMPTY");
+  const body = ts.map(t=>"["+fmtTime(t.ts)+"] "+t.text).join("\n");
+  const system = "You condense a professional's raw, dictated stream-of-consciousness notes from a single day into a clear daily summary. Group related thoughts, and surface decisions made, open questions, and action items. Be faithful to what was said — never invent details. Use short markdown sections and bullet points. Keep it tight."+styleNote();
+  const out = await callClaude(system, "Here are today's dictated thoughts, with timestamps:\n\n"+body+"\n\nWrite the daily summary.");
+  state.daily[key] = { summary: out, ts: Date.now() };
+  save();
+  return out;
+}
+
+async function generateWeekly(){
+  const days = weekWindowDays(); // oldest -> newest, per selected window
+  let material="", any=false;
+  for(const k of days){
+    if(state.daily[k]){ any=true; material += "## "+fmtDay(k)+"\n"+state.daily[k].summary+"\n\n"; }
+    else {
+      const ts=thoughtsFor(k);
+      if(ts.length){ any=true; material += "## "+fmtDay(k)+" (raw notes, not yet distilled)\n"+ts.map(t=>"- "+t.text).join("\n")+"\n\n"; }
+    }
+  }
+  if(!any) throw new Error("EMPTY");
+  const you = state.settings.you || "the team member";
+  const boss = state.settings.bossName ? state.settings.bossName : "their manager";
+  const system = "You write a concise weekly status update that "+you+" will send to "+boss+". Combine the week's daily material into one polished, first-person note. Order it: (1) a one-line summary, (2) Key accomplishments, (3) In progress, (4) Blockers / decisions needed, (5) Next week. Be specific and faithful to the source — do not invent work that isn't there. Professional and warm, no corporate filler. Ready to paste into an email body. Do not include a subject line."+styleNote();
+  const out = await callClaude(system, "Here is the week's material, oldest to newest:\n\n"+material+"\nWrite the weekly update.");
+  const rec = { id:uid(), start:days[0], end:days[days.length-1], summary:out, ts:Date.now() };
+  state.weekly.unshift(rec);
+  save();
+  return rec;
+}
+
+/* ---------------- Rendering ---------------- */
+function renderToday(){
+  $("topdate").textContent = new Date().toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"});
+  const key = dayKey();
+  const ts = thoughtsFor(key);
+
+  // distilled card
+  const dWrap = $("today-distilled"); dWrap.innerHTML="";
+  if(state.daily[key]){
+    const card=document.createElement("div"); card.className="distilled";
+    card.innerHTML = '<div class="label"><span>Distilled · '+fmtTime(state.daily[key].ts)+'</span>'+
+      '<button class="btn sm subtle" id="copy-day">Copy</button></div>'+
+      '<div class="content">'+mdToHtml(state.daily[key].summary)+'</div>';
+    dWrap.appendChild(card);
+    card.querySelector("#copy-day").onclick=()=>{ copyText(state.daily[key].summary); };
+  }
+
+  // thread
+  const thread=$("today-thread"); thread.innerHTML="";
+  if(!ts.length){
+    thread.innerHTML='<div class="empty-state"><div class="big">A clear page.</div>Tap the field below and start talking.</div>';
+  } else {
+    const wrap=document.createElement("div"); wrap.className="thread";
+    ts.forEach(t=>{
+      const e=document.createElement("div"); e.className="entry";
+      e.innerHTML='<div class="ts">'+fmtTime(t.ts)+'</div><div class="body"></div><button class="del">Remove</button>';
+      e.querySelector(".body").textContent=t.text;
+      e.querySelector(".del").onclick=()=>{ state.thoughts=state.thoughts.filter(x=>x.id!==t.id); save(); renderToday(); };
+      wrap.appendChild(e);
+    });
+    thread.appendChild(wrap);
+  }
+  $("today-sub").textContent = ts.length
+    ? ts.length+" thought"+(ts.length>1?"s":"")+" today. Distill when you're ready."
+    : "Dictate a thought as it comes. Distill it when the day is done.";
+  $("distill-btn").disabled = !ts.length;
+  $("distill-btn").textContent = state.daily[key] ? "Re-distill today" : "Distill today";
+}
+
+function renderWeek(){
+  const sel=$("week-window"); if(sel) sel.value = state.settings.weekWindow || "since-last";
+  const wrap=$("week-days"); wrap.innerHTML="";
+  const days=weekWindowDays().slice().reverse(); // newest -> oldest for display
+  days.forEach(k=>{
+    const ts=thoughtsFor(k); const d=state.daily[k];
+    if(!ts.length && !d) return;
+    const card=document.createElement("div"); card.className="daycard";
+    let inner='<div class="head"><span class="day">'+fmtDay(k)+'</span><span class="count">'+ts.length+' thought'+(ts.length===1?"":"s")+'</span></div>';
+    if(d){ inner+='<div class="summary"></div>'; }
+    else { inner+='<div class="empty">Not distilled yet.</div>'; }
+    card.innerHTML=inner;
+    if(d){ card.querySelector(".summary").textContent = d.summary.replace(/[#*]/g,""); }
+    else if(ts.length){
+      const b=document.createElement("button"); b.className="btn sm ghost"; b.style.marginTop="8px"; b.textContent="Distill this day";
+      b.onclick=async()=>{ b.disabled=true; b.innerHTML='<span class="spin"></span>Distilling…';
+        try{ await distillDay(k); renderWeek(); renderToday(); }
+        catch(err){ handleErr(err); b.disabled=false; b.textContent="Distill this day"; } };
+      card.appendChild(b);
+    }
+    wrap.appendChild(card);
+  });
+  if(!wrap.children.length){
+    const msg = (state.settings.weekWindow==="since-last" && state.weekly.length)
+      ? '<div class="big">All caught up.</div>Nothing new since your last weekly summary.'
+      : '<div class="big">Nothing logged yet.</div>Capture a few thoughts, then roll them up here.';
+    wrap.innerHTML='<div class="empty-state">'+msg+'</div>';
+  }
+
+  // latest weekly output editor
+  const out=$("weekly-out"); out.innerHTML="";
+  if(state.weekly.length){
+    const w=state.weekly[0];
+    const box=document.createElement("div"); box.style.marginTop="20px";
+    box.innerHTML='<div class="pasthead" style="margin-top:4px">Weekly summary · '+fmtShort(w.start)+'–'+fmtShort(w.end)+' · edit before sending</div>';
+    const ta=document.createElement("textarea"); ta.className="weekly-edit"; ta.value=w.summary;
+    ta.oninput=()=>{ w.summary=ta.value; save(); };
+    box.appendChild(ta);
+    const row=document.createElement("div"); row.className="btnrow";
+    row.innerHTML='<button class="btn" id="email-btn">Email to boss</button><button class="btn subtle" id="copy-week">Copy</button>';
+    box.appendChild(row);
+    out.appendChild(box);
+    row.querySelector("#email-btn").onclick=()=>emailBoss(w);
+    row.querySelector("#copy-week").onclick=()=>copyText(w.summary);
+  }
+
+  // earlier summaries now live in the Archive tab
+  const hist=$("weekly-history"); if(hist) hist.innerHTML="";
+}
+
+function renderSettings(){
+  const s=state.settings;
+  $("set-key").value=s.apiKey; $("set-model").value=s.model; $("set-style").value=s.style;
+  $("set-you").value=s.you; $("set-bossname").value=s.bossName; $("set-bossemail").value=s.bossEmail;
+}
+
+function arcItem(title, summary){
+  const item=document.createElement("div"); item.className="arc-item";
+  const head=document.createElement("div"); head.className="arc-head";
+  head.innerHTML='<span class="t"></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+  head.querySelector(".t").textContent=title;
+  const body=document.createElement("div"); body.className="arc-body";
+  const content=document.createElement("div"); content.className="content"; content.innerHTML=mdToHtml(summary);
+  body.appendChild(content);
+  const cp=document.createElement("button"); cp.className="btn sm subtle copybtn"; cp.textContent="Copy";
+  cp.onclick=e=>{ e.stopPropagation(); copyText(summary); };
+  body.appendChild(cp);
+  head.onclick=()=>item.classList.toggle("open");
+  item.appendChild(head); item.appendChild(body);
+  return item;
+}
+function renderArchive(){
+  const wrap=$("archive-list"); if(!wrap) return; wrap.innerHTML="";
+  const wHead=document.createElement("div"); wHead.className="pasthead"; wHead.style.marginTop="4px"; wHead.textContent="Weekly summaries";
+  wrap.appendChild(wHead);
+  if(!state.weekly.length){
+    const e=document.createElement("div"); e.className="daycard"; e.innerHTML='<div class="empty">No weekly summaries yet.</div>'; wrap.appendChild(e);
+  } else {
+    state.weekly.forEach(w=>wrap.appendChild(arcItem(fmtShort(w.start)+" – "+fmtShort(w.end), w.summary)));
+  }
+  const dHead=document.createElement("div"); dHead.className="pasthead"; dHead.textContent="Daily summaries";
+  wrap.appendChild(dHead);
+  const keys=Object.keys(state.daily).sort().reverse();
+  if(!keys.length){
+    const e=document.createElement("div"); e.className="daycard"; e.innerHTML='<div class="empty">No daily summaries yet.</div>'; wrap.appendChild(e);
+  } else {
+    keys.forEach(k=>wrap.appendChild(arcItem(fmtDay(k), state.daily[k].summary)));
+  }
+}
+
+/* ---------------- Actions ---------------- */
+function copyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>toast("Copied")).catch(()=>fallbackCopy(t));
+  } else fallbackCopy(t);
+}
+function fallbackCopy(t){ const a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select();
+  try{document.execCommand("copy");toast("Copied");}catch(e){toast("Couldn't copy");} a.remove(); }
+
+function emailBoss(w){
+  const s=state.settings;
+  if(!s.bossEmail){ toast("Add your boss's email in Settings first"); switchView("settings"); return; }
+  const subject="Weekly update — "+fmtShort(w.start)+"–"+fmtShort(w.end);
+  let body=w.summary;
+  if(s.bossName && !/^(hi|hello|dear)\b/i.test(body.trim())) body="Hi "+s.bossName+",\n\n"+body;
+  if(s.you) body=body+"\n\nBest,\n"+s.you;
+  const url="mailto:"+encodeURIComponent(s.bossEmail)+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+  window.location.href=url;
+}
+
+function handleErr(err){
+  const m=String(err.message||err);
+  if(m==="NO_KEY"){ toast("Add your Anthropic API key in Settings"); switchView("settings"); }
+  else if(m==="EMPTY"){ toast("Nothing to summarize yet"); }
+  else if(m.startsWith("API_401")){ toast("API key rejected — check it in Settings"); }
+  else if(m.startsWith("API_429")){ toast("Rate limited — try again in a moment"); }
+  else if(m.startsWith("API_")){ toast("API error: "+m.slice(4,80)); }
+  else if(/Failed to fetch|NetworkError/i.test(m)){ toast("Network error — are you online?"); }
+  else toast("Something went wrong");
+}
+
+/* add a thought */
+const input=$("capture-input");
+function autosize(){ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,120)+"px"; }
+function addThought(){
+  const txt=input.value.trim(); if(!txt) return;
+  state.thoughts.push({id:uid(), text:txt, ts:Date.now()});
+  save(); input.value=""; autosize(); $("send-btn").disabled=true; renderToday();
+}
+input.addEventListener("input",()=>{ autosize(); $("send-btn").disabled=!input.value.trim(); });
+input.addEventListener("keydown",e=>{ if(e.key==="Enter" && (e.metaKey||e.ctrlKey)){ e.preventDefault(); addThought(); }});
+$("send-btn").onclick=addThought;
+
+/* distill today */
+$("distill-btn").onclick=async()=>{
+  const b=$("distill-btn"); const label=b.textContent; b.disabled=true; b.innerHTML='<span class="spin"></span>Distilling…';
+  try{ await distillDay(dayKey()); renderToday(); toast("Day distilled"); }
+  catch(err){ handleErr(err); }
+  finally{ b.disabled=false; renderToday(); }
+};
+
+/* weekly */
+$("weekly-btn").onclick=async()=>{
+  const b=$("weekly-btn"); b.disabled=true; b.innerHTML='<span class="spin"></span>Rolling up the week…';
+  try{ await generateWeekly(); renderWeek(); renderArchive(); toast("Weekly summary ready — review & send"); }
+  catch(err){ handleErr(err); }
+  finally{ b.disabled=false; b.textContent="Regenerate weekly summary"; }
+};
+$("week-window").onchange=()=>{ state.settings.weekWindow=$("week-window").value; save(); renderWeek(); };
+
+/* settings */
+$("save-settings").onclick=()=>{
+  state.settings.apiKey=$("set-key").value.trim();
+  state.settings.model=$("set-model").value;
+  state.settings.style=$("set-style").value.trim();
+  state.settings.you=$("set-you").value.trim();
+  state.settings.bossName=$("set-bossname").value.trim();
+  state.settings.bossEmail=$("set-bossemail").value.trim();
+  save(); toast("Saved");
+};
+$("export-btn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="throughline-backup-"+dayKey()+".json"; a.click(); URL.revokeObjectURL(a.href); toast("Exported");
+};
+$("clear-btn").onclick=()=>{ if(confirm("Erase all thoughts, summaries, and settings on this device? This can't be undone.")){ state=structuredClone(DEFAULT); save(); renderAll(); toast("Erased"); }};
+
+/* dictation via Web Speech API (with graceful fallback to keyboard mic) */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog=null, listening=false;
+if(SR){
+  recog=new SR(); recog.continuous=true; recog.interimResults=true; recog.lang=navigator.language||"en-US";
+  let base="";
+  recog.onresult=e=>{ let interim="",final=""; for(let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) final+=r[0].transcript; else interim+=r[0].transcript; }
+    if(final) base=(base?base+" ":"")+final.trim();
+    input.value=(base+" "+interim).trim(); autosize(); $("send-btn").disabled=!input.value.trim(); };
+  recog.onend=()=>{ if(listening){ try{recog.start();}catch(e){} } };
+  recog.onerror=ev=>{ if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){ toast("Mic blocked — use the keyboard mic instead"); stopRec(); }};
+  $("mic-btn").onclick=()=>{ listening?stopRec():startRec(); };
+  function startRec(){ base=input.value.trim(); listening=true; $("mic-btn").classList.add("live"); $("dock-hint").textContent="Listening… tap the red mic to stop."; try{recog.start();}catch(e){} }
+  function stopRec(){ listening=false; $("mic-btn").classList.remove("live"); $("dock-hint").textContent="Tap the mic on your keyboard to dictate hands-free."; try{recog.stop();}catch(e){} }
+} else {
+  // No in-app speech recognition: rely on the iOS keyboard mic, focus the field to bring up keyboard.
+  $("mic-btn").onclick=()=>{ input.focus(); toast("Use the mic on your keyboard to dictate"); };
+}
+
+/* ---------------- Navigation ---------------- */
+function switchView(name){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  $("view-"+name).classList.add("active");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===name));
+  $("dock").style.display = (name==="today")?"block":"none";
+  if(name==="today") renderToday(); else if(name==="week") renderWeek(); else if(name==="archive") renderArchive(); else renderSettings();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>switchView(t.dataset.view));
+
+function renderAll(){ renderToday(); renderWeek(); renderArchive(); renderSettings(); }
+renderAll();
+autosize();
+</script>
+</body>
+</html>

@@ -338,11 +338,13 @@
 
     <div class="section-h">Your data</div>
     <div class="btnrow" style="margin-top:0;">
-      <button class="btn subtle" id="export-btn">Export all</button>
-      <button class="btn subtle" id="clear-btn" style="color:var(--danger);">Erase all</button>
+      <button class="btn subtle" id="export-btn">Export backup</button>
+      <button class="btn subtle" id="import-btn">Import backup</button>
     </div>
+    <input type="file" id="import-file" accept=".json,application/json" style="display:none" />
+    <button class="btn subtle" id="clear-btn" style="color:var(--danger);margin-top:10px;">Erase all</button>
     <div class="privacy">
-      Your thoughts, summaries, and API key live only in this browser on this device — nothing is sent anywhere except directly to Anthropic when you ask for a summary. Clearing Safari website data will erase them, so export now and then if they matter.
+      Your thoughts, summaries, and API key live only in this app on this device — nothing is sent anywhere except directly to Anthropic when you ask for a summary. To move data between the Safari and Home Screen versions, or to keep a safety copy, use Export backup, then Import backup. Clearing website data erases everything, so export now and then if it matters.
     </div>
   </section>
 
@@ -722,7 +724,32 @@ $("save-settings").onclick=()=>{
 $("export-btn").onclick=()=>{
   const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  a.download="throughline-backup-"+dayKey()+".json"; a.click(); URL.revokeObjectURL(a.href); toast("Exported");
+  a.download="thoughtline-backup-"+dayKey()+".json"; a.click(); URL.revokeObjectURL(a.href); toast("Exported");
+};
+function importData(obj){
+  if(!obj || typeof obj!=="object") throw new Error("bad");
+  // thoughts: add any not already present (union by id)
+  const haveIds=new Set(state.thoughts.map(t=>t.id));
+  (obj.thoughts||[]).forEach(t=>{ if(t&&t.id&&!haveIds.has(t.id)){ state.thoughts.push(t); haveIds.add(t.id); } });
+  // daily: keep the newer summary for each date
+  Object.entries(obj.daily||{}).forEach(([k,v])=>{ if(v&&(!state.daily[k] || (v.ts||0)>(state.daily[k].ts||0))) state.daily[k]=v; });
+  // weekly: add any not already present (union by id), newest first
+  const wIds=new Set(state.weekly.map(w=>w.id));
+  (obj.weekly||[]).forEach(w=>{ if(w&&w.id&&!wIds.has(w.id)) state.weekly.push(w); });
+  state.weekly.sort((a,b)=>(b.ts||0)-(a.ts||0));
+  // settings: fill from backup, but never blank out a value you already have (e.g. API key)
+  const s=obj.settings||{};
+  Object.keys(state.settings).forEach(key=>{ if(s[key]!==undefined && s[key]!=="") state.settings[key]=s[key]; });
+  save();
+}
+$("import-btn").onclick=()=>$("import-file").click();
+$("import-file").onchange=e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ importData(JSON.parse(r.result)); renderAll(); toast("Backup imported — your data is here"); }
+    catch(err){ toast("Couldn't read that backup file"); } finally{ $("import-file").value=""; } };
+  r.onerror=()=>{ toast("Couldn't read that file"); $("import-file").value=""; };
+  r.readAsText(f);
 };
 $("clear-btn").onclick=()=>{ if(confirm("Erase all thoughts, summaries, and settings on this device? This can't be undone.")){ state=structuredClone(DEFAULT); save(); renderAll(); toast("Erased"); }};
 
